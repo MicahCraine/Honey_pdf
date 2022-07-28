@@ -1,0 +1,58 @@
+---
+title: "Honey DNA Report"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+#file input
+honeyset <- read.csv("/Users/josephcraine/Downloads/HoneyTest.csv")
+library(ggplot2)
+library(knitr)
+library(gt)
+library(RColorBrewer)
+library(colorspace)
+library(ggrepel)
+library(tidyverse)
+library(tidyr)
+library(gtExtras)
+```
+
+
+``` {r, include=FALSE}
+percentages <- honeyset[1:10,12]/sum(honeyset[12])
+other <- 1 - sum(percentages)
+honey_f <- cbind(honeyset$ESV[1:10], percentages)
+
+newrow <- 1:10
+honey_tidied <- cbind(newrow, honey_f)
+
+honey_tidied <- data.frame(honey_tidied)
+colnames(honey_tidied) <- c("Number", "ESV", "Percentages")
+
+honey_tidied[11,] <- c("other", "other", other)
+honey_tidied$Percentages <- as.numeric(honey_tidied$Percentages) 
+```
+
+
+## Pie Chart of top 10 ESVs
+``` {r echo=FALSE, figures-side, fig.show="hold", out.width="100%"}
+
+#pie chart
+pie(honey_tidied$Percentages[1:11], honey_tidied$Number, main="Honey Percentages", clockwise = T, col = c("#FFFF50", "#FFF02B", "#F5DF00", "#E8D000", "#DBC100", "#CFB300", "#C3A600", "#B79900", "#AC8C00", "#A07F00", "#808080"))
+
+#bar chart
+honey_tidied %>% 
+  gt() %>%
+  tab_header(title = "Top ten species") %>%
+  fmt_percent(columns = "Percentages") %>%
+  gt_plt_bar(
+  column = Percentages,
+  color = "orange",
+  keep_column = TRUE)
+
+
+
+# honey_palette <- choose_palette()
+```
