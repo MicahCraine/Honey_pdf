@@ -5,54 +5,75 @@ output:
   pdf_document: default
 ---
 
+
 ```{r setup, include=FALSE}
 #file input
-honeyset <- read.csv("/Users/josephcraine/Downloads/HoneyTest.csv")
 library(ggplot2)
 library(knitr)
 library(gt)
-library(RColorBrewer)
 library(colorspace)
 library(ggrepel)
 library(tidyverse)
-library(tidyr)
 library(gtExtras)
+library(svglite)
 ```
 
 
 ``` {r, include=FALSE}
-percentages <- honeyset[1:10,12]/sum(honeyset[12])
-other <- 1 - sum(percentages)
-honey_f <- cbind(honeyset$ESV[1:10], percentages)
+dat <- read.csv("~/Downloads/HoneyTest.csv") |>
+  rename(reads=`S032910.1`) |>
+  mutate(SampleId="S032910.1")
 
-newrow <- 1:10
-honey_tidied <- cbind(newrow, honey_f)
 
-honey_tidied <- data.frame(honey_tidied)
-colnames(honey_tidied) <- c("Number", "ESV", "Percentages")
+honey_tidied <- dat |>
+  group_by(SampleId) |>
+  mutate(
+    Percentages = reads/sum(reads),
+    ESV = case_when(
+      Percentages<0.01 ~ "other",
+      TRUE ~ ESV
+    )
+  ) |>
+  group_by(ESV, SampleId) |>
+  summarise(Percentages=sum(Percentages)) 
 
-honey_tidied[11,] <- c("other", "other", other)
-honey_tidied$Percentages <- as.numeric(honey_tidied$Percentages) 
+honey_tidied$Numbers <- 1:nrow(honey_tidied)
+honey_tidied$Numbers <- as.character(honey_tidied$Numbers)
+honey_tidied[nrow(honey_tidied),4] <- "other"
+
+honey_tidied <- select(honey_tidied,4,1,3,2)
 ```
 
 
-## Pie Chart of top 10 ESVs
+## Pie Chart and Table of top `r nrow(honey_tidied)` Species
 ``` {r echo=FALSE, figures-side, fig.show="hold", out.width="100%"}
 
 #pie chart
-pie(honey_tidied$Percentages[1:11], honey_tidied$Number, main="Honey Percentages", clockwise = T, col = c("#FFFF50", "#FFF02B", "#F5DF00", "#E8D000", "#DBC100", "#CFB300", "#C3A600", "#B79900", "#AC8C00", "#A07F00", "#808080"))
+pie(honey_tidied$Percentages[1:nrow(honey_tidied)], honey_tidied$Numbers, main="Honey Percentages", clockwise = T, col = c("#FFFF50", "#FFF02B", "#F5DF00", "#E8D000", "#DBC100", "#CFB300", "#C3A600", "#B79900", "#AC8C00", "#A07F00", "#808080"))
+
+#dcb872
+#daa249
+#b1742b
+#946c3a
+#E5c263
+#ceaf59
+#E3de8d
+#ccc87f
+#B19248
+#E9d159
+#d2bd51
+#e5c37b
+#D8b
+
 
 #bar chart
-honey_tidied %>% 
-  gt() %>%
-  tab_header(title = "Top ten species") %>%
-  fmt_percent(columns = "Percentages") %>%
+
+honey_tidied[,c("Numbers", "ESV", "Percentages")] |> 
+  gt() |>
+  tab_header(title = paste("Top", as.character(nrow(honey_tidied)), "ESVs")) |>
+  fmt_percent(columns = "Percentages") |>
   gt_plt_bar(
   column = Percentages,
   color = "orange",
   keep_column = TRUE)
-
-
-
-# honey_palette <- choose_palette()
 ```
