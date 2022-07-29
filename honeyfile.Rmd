@@ -24,7 +24,6 @@ dat <- read.csv("~/Downloads/HoneyTest.csv") |>
   rename(reads=`S032910.1`) |>
   mutate(SampleId="S032910.1")
 
-
 honey_tidied <- dat |>
   group_by(SampleId) |>
   mutate(
@@ -34,39 +33,33 @@ honey_tidied <- dat |>
       TRUE ~ ESV
     )
   ) |>
-  group_by(ESV, SampleId) |>
+  group_by(ESV) |>
   summarise(Percentages=sum(Percentages)) 
+
+head <- slice_head(honey_tidied, n = nrow(honey_tidied)-1) |>
+  arrange(desc(Percentages))
+
+honey_tidied <- bind_rows(head, honey_tidied[nrow(honey_tidied),])
 
 honey_tidied$Numbers <- 1:nrow(honey_tidied)
 honey_tidied$Numbers <- as.character(honey_tidied$Numbers)
-honey_tidied[nrow(honey_tidied),4] <- "other"
+honey_tidied[nrow(honey_tidied),3] <- "other"
 
-honey_tidied <- select(honey_tidied,4,1,3,2)
+honey_tidied <- select(honey_tidied,3,1,2)
 ```
 
 
 ## Pie Chart and Table of top `r nrow(honey_tidied)` Species
-``` {r echo=FALSE, figures-side, fig.show="hold", out.width="100%"}
+``` {r echo=FALSE}
+palette <- c("#dcb872", "#daa249", "#b1742b", "#946c3a", "#E5c263", "#ceaf59", "#E3de8d", "#d8af35", "#B19248", "#E9d159", "#d2bd51", "#e5c37b", "#D8b035", "#d1be43", "#574424", "#855e1b", "#dbba58", "#d9c077", "#9c843b", "#967921", "#968944", "#857526", "#c9ac69", "#d4bc33", "#d9c58d")
+
+palette2 = c("#FFF470", "#FFEB66", "#FFE35B", "#FFDB51", "#FFD346", "#FFCC3B", "#FFC52E", "#FFBE20", "#FFB808", "#F9B200", "#F4AC00", "#EFA600", "#EAA100", "#E69C00", "#E29800", "#DE9400", "#DB9000", "#D88D00","#D58A00", "#D38700", "#D18500", "#D08300", "#CF8100", "#CF8000", "#CF7F00")
+
+palette3 <- c(palette2[1:nrow(honey_tidied)-1], "#808080")
 
 #pie chart
-pie(honey_tidied$Percentages[1:nrow(honey_tidied)], honey_tidied$Numbers, main="Honey Percentages", clockwise = T, col = c("#FFFF50", "#FFF02B", "#F5DF00", "#E8D000", "#DBC100", "#CFB300", "#C3A600", "#B79900", "#AC8C00", "#A07F00", "#808080"))
+pie(honey_tidied$Percentages[1:nrow(honey_tidied)], honey_tidied$Numbers, main="Honey Percentages", clockwise = T, col = palette3)
 
-#dcb872
-#daa249
-#b1742b
-#946c3a
-#E5c263
-#ceaf59
-#E3de8d
-#ccc87f
-#B19248
-#E9d159
-#d2bd51
-#e5c37b
-#D8b
-
-
-#bar chart
 
 honey_tidied[,c("Numbers", "ESV", "Percentages")] |> 
   gt() |>
