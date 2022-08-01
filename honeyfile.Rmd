@@ -1,10 +1,14 @@
 ---
-title: "Honey DNA Report"
 output:
-  html_document: default
   pdf_document: default
+  html_document:
+    df_print: paged
+geometry: "left=2cm, right=2cm, top=0.5cm, bottom=2cm"
 ---
 
+```{r, include=FALSE}
+options(tinytex.verbose = TRUE)
+```
 
 ```{r setup, include=FALSE}
 #file input
@@ -16,57 +20,102 @@ library(ggrepel)
 library(tidyverse)
 library(gtExtras)
 library(svglite)
+library(knitr)
 ```
 
+```{r, include=FALSE}
+samp <- read.csv("~/Downloads/honeysample.csv")
 
-``` {r, include=FALSE}
-dat <- read.csv("~/Downloads/HoneyTest.csv") |>
+dat <- read.csv("~/Downloads/HoneySpecies.csv") |>
   rename(reads=`S032910.1`) |>
   mutate(SampleId="S032910.1")
 
-honey_tidied <- dat |>
-  group_by(SampleId) |>
+
+dat2 <- dat |>
+  group_by(RepSpecies) |>
+  summarise(reads = sum(reads))
+
+honey_tidied <- dat2 |>
   mutate(
     Percentages = reads/sum(reads),
-    ESV = case_when(
+    RepSpecies = case_when(
       Percentages<0.01 ~ "other",
-      TRUE ~ ESV
+      TRUE ~ RepSpecies
     )
   ) |>
-  group_by(ESV) |>
-  summarise(Percentages=sum(Percentages)) 
+  group_by(RepSpecies) |>
+  summarise(Percentages = sum(Percentages)) 
 
-head <- slice_head(honey_tidied, n = nrow(honey_tidied)-1) |>
+tail <- slice_tail(honey_tidied, n = nrow(honey_tidied)-1) |>
   arrange(desc(Percentages))
 
-honey_tidied <- bind_rows(head, honey_tidied[nrow(honey_tidied),])
+honey_tidied <- bind_rows(tail, honey_tidied[1,])
 
 honey_tidied$Numbers <- 1:nrow(honey_tidied)
 honey_tidied$Numbers <- as.character(honey_tidied$Numbers)
-honey_tidied[nrow(honey_tidied),3] <- "other"
+honey_tidied[nrow(honey_tidied),3] <- "o"
 
 honey_tidied <- select(honey_tidied,3,1,2)
 ```
 
+```{r echo=FALSE}
+knitr::opts_chunk$set(fig.align = 'center')
+```
 
-## Pie Chart and Table of top `r nrow(honey_tidied)` Species
-``` {r echo=FALSE}
+```{r echo=FALSE, out.width = "33%"}
+knitr::include_graphics('~/Downloads/JonahLogo2018.Color.JV.jpg')
+```
+
+```{=tex}
+\begin{center}
+JONAH VENTURES LABORATORY
+
+jonahventures.com
+
+5485 Conestoga Ct STE 210, Boulder, CO 80301
+
+785 409 1655
+\end{center}
+```
+
+**CUSTOMER:** `r samp[1,1]`\
+**SAMPLE ID:** `r samp[1,2]`\
+**DATE ORDERED:** `r samp[1,3]`\
+**DATE ANALYZED:** `r samp[1,4]`
+
+------------------------------------------------------------------------
+
+## Pie Chart and Table of top `r nrow(honey_tidied) - 1` Species
+
+```{r echo=FALSE, figures-side, fig.show="hold", out.width="20%"}
 palette <- c("#dcb872", "#daa249", "#b1742b", "#946c3a", "#E5c263", "#ceaf59", "#E3de8d", "#d8af35", "#B19248", "#E9d159", "#d2bd51", "#e5c37b", "#D8b035", "#d1be43", "#574424", "#855e1b", "#dbba58", "#d9c077", "#9c843b", "#967921", "#968944", "#857526", "#c9ac69", "#d4bc33", "#d9c58d")
 
-palette2 = c("#FFF470", "#FFEB66", "#FFE35B", "#FFDB51", "#FFD346", "#FFCC3B", "#FFC52E", "#FFBE20", "#FFB808", "#F9B200", "#F4AC00", "#EFA600", "#EAA100", "#E69C00", "#E29800", "#DE9400", "#DB9000", "#D88D00","#D58A00", "#D38700", "#D18500", "#D08300", "#CF8100", "#CF8000", "#CF7F00")
+palette2 <- c("#FFF470", "#FFEB66", "#FFE35B", "#FFDB51", "#FFD346", "#FFCC3B", "#FFC52E", "#FFBE20", "#FFB808", "#F9B200", "#F4AC00", "#EFA600", "#EAA100", "#E69C00", "#E29800", "#DE9400", "#DB9000", "#D88D00","#D58A00", "#D38700", "#D18500", "#D08300", "#CF8100", "#CF8000", "#CF7F00")
 
-palette3 <- c(palette2[1:nrow(honey_tidied)-1], "#808080")
+palette3 <- c("#edec8b", "#ede47d", "#eddb6f", "#edd261", "#eec954", "#efc047", "#f0b63a", "#f1ac2d", "#f3a220", "#f49712", "#dd8c0d", "#c68008", "#b07506", "#9c6a05", "#885e04", "#755304", "#624704", "#513c04", "#413102", "#534311", "#66551e", "#79692c", "#8c7d3b", "#a09249", "#b3a859", "#c6be69", "#dad57a", "#edec8b")
+
+#palette4 <- c(palette3[1:nrow(honey_tidied)-1], "#808080")
 
 #pie chart
-pie(honey_tidied$Percentages[1:nrow(honey_tidied)], honey_tidied$Numbers, main="Honey Percentages", clockwise = T, col = palette3)
+pie(honey_tidied$Percentages[1:nrow(honey_tidied)], honey_tidied$Numbers, clockwise = T, col = palette3)
 
 
-honey_tidied[,c("Numbers", "ESV", "Percentages")] |> 
+honey_tidied[,c("Numbers", "RepSpecies", "Percentages")] |> 
   gt() |>
-  tab_header(title = paste("Top", as.character(nrow(honey_tidied)), "ESVs")) |>
-  fmt_percent(columns = "Percentages") |>
-  gt_plt_bar(
-  column = Percentages,
-  color = "orange",
-  keep_column = TRUE)
+  tab_header(title = paste("Top", nrow(honey_tidied)-1, "ESVs")) |>
+  fmt_percent(columns = "Percentages")
+  #gt_plt_bar(
+  #column = Percentages,
+  #color = "orange",
+  #keep_column = TRUE)
+```
+
+------------------------------------------------------------------------
+
+```{=tex}
+\begin{center}
+This is an official sample guaranteed by jonahventures
+
+For any questions please contact info@jonahventures.com
+\end{center}
 ```
